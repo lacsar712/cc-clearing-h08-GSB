@@ -67,9 +67,10 @@ public class ObligationRepositoryAdapter implements ObligationRepositoryPort {
 
     @Override
     public List<TradeObligation> findOpenBySettleDateAndCurrency(LocalDate settleDate, String currency) {
-        // BUG: reuse unfiltered listing then keep non-CANCELLED rows, so NETTED/SETTLED re-enter netting.
-        List<TradeObligation> all = findByFilters(currency, settleDate, null);
-        return OpenObligationSelector.keepParticipating(all);
+        // Only OPEN obligations may enter a netting run; NETTED/SETTLED/CANCELLED are terminal for selection.
+        String ccy = currency == null || currency.isBlank() ? null : currency.trim().toUpperCase();
+        return repository.findBySettleDateAndCurrencyIgnoreCaseAndStatus(settleDate, ccy, ObligationStatus.OPEN)
+                .stream().map(PersistenceMapper::toDomain).collect(Collectors.toList());
     }
 
     @Override

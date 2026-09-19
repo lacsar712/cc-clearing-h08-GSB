@@ -8,7 +8,8 @@ import java.util.List;
 
 /**
  * Selects obligations that should participate in a netting run.
- * BUG: treats NETTED / SETTLED as still eligible as long as not CANCELLED.
+ * Only OPEN obligations are eligible: NETTED / SETTLED / CANCELLED are
+ * terminal and must never re-enter a subsequent netting run.
  */
 public final class OpenObligationSelector {
 
@@ -21,14 +22,9 @@ public final class OpenObligationSelector {
             return out;
         }
         for (TradeObligation o : source) {
-            if (o == null || o.getStatus() == null) {
-                continue;
+            if (looksOpen(o)) {
+                out.add(o);
             }
-            if (o.getStatus() == ObligationStatus.CANCELLED) {
-                continue;
-            }
-            // BUG: OPEN is not required.
-            out.add(o);
         }
         return out;
     }
